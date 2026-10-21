@@ -212,15 +212,29 @@ Still stuck? Send Shreya the exact error text — it says what's wrong and how t
 
 ---
 
-## Updating and removing
+## Getting updates
 
-Get the latest version:
+When a new version is released, run **both** commands. The first fetches the latest release
+info, the second actually installs it:
 
 ```bash
 claude plugin marketplace update touchstone-exchange
 ```
 
-Remove it:
+```bash
+claude plugin update touchstone
+```
+
+Then **restart Claude Code** — it tells you to when the update lands.
+
+Check which version you're on any time with `claude plugin list`.
+
+> Running only the first command looks like it worked — it says "Successfully updated
+> marketplace" — but leaves the plugin itself untouched. You need both.
+
+---
+
+## Removing it
 
 ```bash
 claude plugin uninstall touchstone@touchstone-exchange
