@@ -45,14 +45,22 @@ If the repo is private, make sure your `gh` CLI or git credentials can read it f
 
 ### 2. Get your own API key
 
-`get_key.sh` ships with this plugin. Run it against the API URL:
+Open the portal in a browser and sign up:
+
+```
+https://touchstone.example.com/portal
+```
+
+Create a key with the **read** scope, then copy it — it is shown once and never again.
+
+Prefer the terminal? `get_key.sh` ships with this plugin and does the same thing:
 
 ```bash
 TOUCHSTONE_API_URL=https://touchstone.example.com ./get_key.sh
 ```
 
-It creates your account, makes a read-only key, and prints the two `export` lines to use next.
-**Nobody needs to send you a key** — you make your own, and it never travels through chat or email.
+Either way, **nobody needs to send you a key** — you make your own, and it never travels through
+chat or email. Lost it? Make a new one and revoke the old one in the portal.
 
 ### 3. Put the key in your environment
 
