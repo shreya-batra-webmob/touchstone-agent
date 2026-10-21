@@ -27,7 +27,7 @@ read -r -s -p "Password (at least 10 characters): " PASSWORD; echo
 
 payload() { python3 -c 'import json,sys; print(json.dumps({"email":sys.argv[1],"password":sys.argv[2]}))' "$EMAIL" "$PASSWORD"; }
 
-CODE=$(curl -s -o /tmp/touchstone_signup.$$ -w '%{http_code}' -X POST "$BASE/account/signup" \
+CODE=$(curl -s -o /tmp/touchstone_signup.$$ -w '%{http_code}' -c "$JAR" -X POST "$BASE/account/signup" \
   -H 'Content-Type: application/json' -d "$(payload)")
 case "$CODE" in
   201) echo "Account created." ;;
@@ -37,17 +37,29 @@ case "$CODE" in
 esac
 rm -f /tmp/touchstone_signup.$$
 
-CODE=$(curl -s -o /tmp/touchstone_login.$$ -w '%{http_code}' -c "$JAR" -X POST "$BASE/account/login" \
-  -H 'Content-Type: application/json' -d "$(payload)")
-if [ "$CODE" != "200" ]; then
-  echo "Login failed (HTTP $CODE):" >&2; cat /tmp/touchstone_login.$$ >&2; echo >&2
-  rm -f /tmp/touchstone_login.$$; exit 1
+# A fresh signup already logs us in. Only log in when the account existed already.
+if [ "$CODE" = "409" ]; then
+  CODE=$(curl -s -o /tmp/touchstone_login.$$ -w '%{http_code}' -c "$JAR" -X POST "$BASE/account/login" \
+    -H 'Content-Type: application/json' -d "$(payload)")
+  if [ "$CODE" != "200" ]; then
+    echo "Login failed (HTTP $CODE):" >&2; cat /tmp/touchstone_login.$$ >&2; echo >&2
+    rm -f /tmp/touchstone_login.$$; exit 1
+  fi
+  rm -f /tmp/touchstone_login.$$
 fi
-rm -f /tmp/touchstone_login.$$
 unset PASSWORD
+
+# Creating a key is a cookie-authenticated write, so it needs the CSRF token the server stored
+# on this session. It arrives in a readable cookie; echo it back in the header.
+CSRF=$(awk '$6 == "touchstone_csrf" { print $7 }' "$JAR" | tail -1)
+if [ -z "$CSRF" ]; then
+  echo "No CSRF token in the session. Is the server up to date?" >&2
+  exit 1
+fi
 
 NAME="${1:-$(hostname)-$(date +%Y%m%d)}"
 CREATED=$(curl -s -b "$JAR" -X POST "$BASE/dashboard/keys" -H 'Content-Type: application/json' \
+  -H "X-CSRF-Token: $CSRF" \
   -d "$(python3 -c 'import json,sys; print(json.dumps({"name":sys.argv[1],"scopes":["read"]}))' "$NAME")")
 KEY=$(echo "$CREATED" | jget '["api_key"]')
 if [ -z "$KEY" ]; then
