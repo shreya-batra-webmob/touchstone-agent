@@ -41,8 +41,9 @@ def get_api_key():
     key = os.environ.get("TOUCHSTONE_API_KEY", "").strip()
     if not key:
         die("no_api_key", "TOUCHSTONE_API_KEY is not set in the environment.",
-            "Ask the user to run  export TOUCHSTONE_API_KEY=tst_...  in the shell that starts their "
-            "agent, then restart it. Never ask them to paste the key into the conversation.",
+            "In a terminal: add  export TOUCHSTONE_API_KEY=tst_...  to ~/.zshrc. In the Claude "
+            "Desktop app: add it to the env block of ~/.claude/settings.json. Restart afterwards. "
+            "Never ask the user to paste the key into the conversation.",
             EXIT_SETUP_ERROR)
     return key
 

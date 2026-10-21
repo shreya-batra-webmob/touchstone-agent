@@ -28,6 +28,7 @@ You also need the **API address**:
 ```
 https://touchstone.example.com
 ```
+
 ---
 
 ## Step 1 — Install the plugin
@@ -87,36 +88,76 @@ Nobody needs to send you a key. You make your own, and it never travels through 
 
 ---
 
-## Step 3 — Put the key in your shell
+## Step 3 — Give the plugin your key
 
-Open a terminal and run these two lines, pasting your key into the first:
+**Pick the option that matches how you use Claude Code.**
+
+### Option A — You run `claude` in a terminal
+
+Add these two lines to the end of `~/.zshrc` (or `~/.bashrc` if you use bash), pasting your key
+into the first:
 
 ```bash
 export TOUCHSTONE_API_KEY=tst_paste_your_key_here
-```
-
-```bash
 export TOUCHSTONE_API_URL=https://touchstone.example.com
 ```
 
-To avoid redoing this every time, add both lines to the end of `~/.bashrc` (or `~/.zshrc` if you
-use zsh), then run `source ~/.bashrc`.
+Then reload: `source ~/.zshrc`
 
-> Keep the key in the environment like this. Never paste it into a chat, a command argument, or a
-> file you commit — arguments and chat transcripts get stored and shared.
+### Option B — You use the Claude Desktop app
+
+The desktop app doesn't inherit your terminal's environment, so `export` won't reach it. Put the
+key in Claude Code's own settings file instead.
+
+Open `~/.claude/settings.json` in a text editor. If it doesn't exist, create it. **Add an `env`
+block, keeping anything already in the file:**
+
+```json
+{
+  "env": {
+    "TOUCHSTONE_API_KEY": "tst_paste_your_key_here",
+    "TOUCHSTONE_API_URL": "https://touchstone.example.com"
+  }
+}
+```
+
+If the file already has settings, just add the `env` block alongside them:
+
+```json
+{
+  "model": "claude-opus-5",
+  "env": {
+    "TOUCHSTONE_API_KEY": "tst_paste_your_key_here",
+    "TOUCHSTONE_API_URL": "https://touchstone.example.com"
+  }
+}
+```
+
+It must stay valid JSON — commas between entries, double quotes everywhere. Then lock the file
+down so only you can read it:
+
+```bash
+chmod 600 ~/.claude/settings.json
+```
+
+> **Why a file and not a terminal?** The desktop app has no shell to inherit from. This is the
+> supported way to give it an environment variable. The key sits in plaintext in that file, so
+> keep it in your home directory — **never** in a project's `.claude/settings.json`, which gets
+> committed to git. If it ever leaks, revoke it in the portal; that takes seconds and affects
+> nobody else.
+
+> Either way: never paste the key into a chat, a command argument, or a file you commit.
+> Arguments and chat transcripts get stored and shared.
 
 ---
 
-## Step 4 — Start Claude Code from that same terminal
+## Step 4 — Restart Claude Code
 
-```bash
-claude
-```
+The key is only picked up at startup.
 
-**This matters.** The plugin reads the key from the terminal Claude Code was launched from. If you
-set the variables in one window and start Claude Code in another, it won't find them.
-
-Already had Claude Code open? Quit it and start it again from the terminal where you ran step 3.
+- **Terminal:** quit Claude Code, then start it again **from the terminal where you ran step 3**.
+  If you set the variables in one window and launch from another, it won't find them.
+- **Desktop app:** quit it fully and reopen it. On macOS use ⌘Q — closing the window isn't enough.
 
 ---
 
@@ -139,15 +180,20 @@ that tells it which tool to reach for.
 
 ## If something goes wrong
 
-First, check the key is actually in this terminal:
+**The quickest check: ask Claude *"Is my Touchstone API key working?"*** — it runs the check and
+shows you the exact error.
+
+If you're on the terminal setup, you can also confirm the key is in that shell:
 
 ```bash
 echo "${TOUCHSTONE_API_KEY:0:8}... ${TOUCHSTONE_API_URL}"
 ```
 
 It should print `tst_...` and the API address. Blank means step 3 didn't stick in this window.
+(On the desktop app this will print blank even when things are fine — the key lives in
+`~/.claude/settings.json`, not in your shell.)
 
-Then run the plugin's own script — it prints the real error:
+To see the raw error yourself:
 
 ```bash
 python3 "$(find ~/.claude/plugins -name touchstone.py | head -1)" me
@@ -155,7 +201,7 @@ python3 "$(find ~/.claude/plugins -name touchstone.py | head -1)" me
 
 | What you see | What it means | Fix |
 |---|---|---|
-| `no_api_key` | The key isn't in this terminal's environment | Redo step 3, then restart Claude Code from that same terminal |
+| `no_api_key` | Claude Code can't see the key | Redo step 3 for **your** setup, then fully restart Claude Code. Desktop app users: check `~/.claude/settings.json` is valid JSON |
 | `connection_failed` | Can't reach the API | Check `TOUCHSTONE_API_URL`. On a work network you may need the VPN |
 | `invalid_api_key` | Key is wrong, revoked or expired | Make a new key (step 2). A short copy-paste is the usual cause |
 | `insufficient_scope` | Key has no **read** scope | Make a new key with **read** ticked |

@@ -28,15 +28,17 @@ them read raw JSON unless they ask for it.
 
 ## Before anything else
 
-The script needs `TOUCHSTONE_API_KEY` in its environment. If a command fails with `no_api_key`, tell the
-user to run this in the shell they start their agent from, then restart it:
+The script reads `TOUCHSTONE_API_KEY` from its environment. If a command fails with `no_api_key`,
+it isn't set up yet. The fix depends on how they run Claude Code, so say both — and tell them to
+fully restart it afterwards, since the key is only read at startup:
 
-```bash
-export TOUCHSTONE_API_KEY=tst_your_key_here
-```
+- **Terminal (`claude`)** — add to `~/.zshrc` (or `~/.bashrc`), then `source` it:
+  `export TOUCHSTONE_API_KEY=tst_...`
+- **Claude Desktop app** — add it to the `env` block of `~/.claude/settings.json`. The desktop app
+  has no shell to inherit from, so `export` will not reach it.
 
-If the server isn't running locally, they also need `export TOUCHSTONE_API_URL=https://...`.
-The default is `http://localhost:8000`.
+They also need `TOUCHSTONE_API_URL` unless the API is at `http://localhost:8000`, which is the
+default. Keys come from the portal at `<API_URL>/portal`.
 
 ## Safety rules
 
