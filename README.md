@@ -28,10 +28,6 @@ You also need the **API address**:
 ```
 https://touchstone.example.com
 ```
-
-> ⚠️ **Shreya: replace that address with the real one before sharing this repo.** It also appears
-> in steps 2 and 3. If the API isn't hosted yet, see "Running it locally" near the bottom.
-
 ---
 
 ## Step 1 — Install the plugin
