@@ -1,0 +1,14 @@
+{
+  "name": "touchstone-exchange",
+  "owner": {
+    "name": "Touchstone Exchange"
+  },
+  "description": "Agent plugin for the Touchstone Exchange API.",
+  "plugins": [
+    {
+      "name": "touchstone",
+      "source": "./",
+      "description": "Read-only access to the Touchstone Exchange API: balances, prices, account details and trade history."
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "name": "touchstone",
+  "displayName": "Touchstone Exchange",
+  "version": "0.1.0",
+  "description": "Read-only access to the Touchstone Exchange test API: balances, prices, account details and trade history.",
+  "author": {
+    "name": "Touchstone Exchange"
+  },
+  "keywords": ["touchstone-exchange", "testing", "api-key", "skills"]
+}
