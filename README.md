@@ -1,154 +1,242 @@
-# Touchstone Exchange agent plugin (read-only)
+# Touchstone Exchange — Claude Code plugin
 
-A Claude Code plugin that bundles one Agent Skill. The skill teaches the agent four read-only
-commands against the Touchstone Exchange API: `me`, `prices`, `balances`, `trades`.
+Ask Claude Code about your Touchstone Exchange account in plain English:
 
-Read-only on purpose: there is no quote, swap or execute command here, so nothing this plugin
-does can move money.
+> "What are my Touchstone balances?"
 
-## What's in it
+It answers by calling the Touchstone API for you. **Read-only** — it can look things up, but it
+cannot trade, move or spend anything.
+
+Setup takes about 5 minutes. Follow the steps in order.
+
+---
+
+## Before you start
+
+You need three things:
+
+| | How to check |
+|---|---|
+| **Claude Code** installed | `claude --version` prints a version |
+| **Python 3** installed | `python3 --version` prints 3.8 or higher |
+| **Access to this repo** | You can open it on GitHub without a 404 |
+
+If the repo 404s, ask Shreya for read access — it's private.
+
+You also need the **API address**:
 
 ```
-.claude-plugin/
-├── marketplace.json     lets `marketplace add <org>/<repo>` find the plugin
-└── plugin.json          the plugin manifest
-get_key.sh               makes your own API key against the hosted API
-skills/touchstone/
-├── SKILL.md             what the agent loads when a task matches (~60 lines)
-├── references/api.md    response shapes, error codes, limits (loaded only when needed)
-└── scripts/touchstone.py    the CLI the agent runs. Standard library only, no pip install.
+https://touchstone.example.com
 ```
 
-This repo is the **client half only**. The API it talks to lives in a separate, private repo and
-is hosted; this plugin never contains any exchange logic.
+> ⚠️ **Shreya: replace that address with the real one before sharing this repo.** It also appears
+> in steps 2 and 3. If the API isn't hosted yet, see "Running it locally" near the bottom.
 
-**Why it's shaped this way.** At startup the agent loads only the skill's `name` and `description`
-— about 100 tokens. It reads the full `SKILL.md` only when a task looks relevant, and
-`references/api.md` only when it needs that detail. An MCP server would instead push every tool's
-full schema into the model's context on every conversation.
+---
 
-## Install it (for teammates)
+## Step 1 — Install the plugin
 
-Ask whoever runs the exchange for the **API URL** before you start. Then:
-
-### 1. Install the plugin
+Run these two commands anywhere:
 
 ```bash
-claude plugin marketplace add YOUR-ORG/YOUR-REPO
+claude plugin marketplace add shreya-batra-webmob/touchstone-agent
 ```
 
 ```bash
 claude plugin install touchstone@touchstone-exchange
 ```
 
-If the repo is private, make sure your `gh` CLI or git credentials can read it first.
+Check it worked:
 
-### 2. Get your own API key
+```bash
+claude plugin list
+```
 
-Open the portal in a browser and sign up:
+You should see `touchstone@touchstone-exchange` with **Status: ✔ enabled**.
+
+<details>
+<summary>It said "Repository not found"</summary>
+
+Your git can't read the private repo. Test with:
+
+```bash
+ssh -T git@github.com
+```
+
+It should greet you by username. If it doesn't, add an SSH key to your GitHub account, then ask
+Shreya to confirm you have access to the repo.
+</details>
+
+---
+
+## Step 2 — Get your own API key
+
+Open the portal in your browser:
 
 ```
 https://touchstone.example.com/portal
 ```
 
-Create a key with the **read** scope, then copy it — it is shown once and never again.
+1. Type your email and a password of **at least 10 characters**.
+2. Click **Create account**. (Don't press Enter — that tries to log in, and you don't have an
+   account yet.)
+3. You'll land on the dashboard. Under **Create a key**, give it a name like `laptop`, leave the
+   **read** scope ticked, and click **Create key**.
+4. Your key appears once, starting with `tst_`. Click **Copy**.
 
-Prefer the terminal? `get_key.sh` ships with this plugin and does the same thing:
+**Copy it now — you cannot see it again.** If you lose it, make another one and revoke the old one
+from the same page.
+
+Nobody needs to send you a key. You make your own, and it never travels through chat or email.
+
+---
+
+## Step 3 — Put the key in your shell
+
+Open a terminal and run these two lines, pasting your key into the first:
 
 ```bash
-TOUCHSTONE_API_URL=https://touchstone.example.com ./get_key.sh
+export TOUCHSTONE_API_KEY=tst_paste_your_key_here
 ```
 
-Either way, **nobody needs to send you a key** — you make your own, and it never travels through
-chat or email. Lost it? Make a new one and revoke the old one in the portal.
-
-### 3. Put the key in your environment
-
 ```bash
-export TOUCHSTONE_API_KEY=tst_your_key_here
 export TOUCHSTONE_API_URL=https://touchstone.example.com
 ```
 
-**The key goes in the environment, never in a command-line argument** — arguments end up in shell
-history, process lists and agent transcripts.
+To avoid redoing this every time, add both lines to the end of `~/.bashrc` (or `~/.zshrc` if you
+use zsh), then run `source ~/.bashrc`.
 
-### 4. Start Claude Code from that same shell
+> Keep the key in the environment like this. Never paste it into a chat, a command argument, or a
+> file you commit — arguments and chat transcripts get stored and shared.
 
-This matters: the skill's script inherits the environment of the shell Claude Code was started
-from. Export the variables first, then launch. Then ask:
+---
 
-- "What are my Touchstone Exchange balances?"
-- "What's ETH worth on the Touchstone exchange?"
-- "Is my Touchstone Exchange key working?"
-- "Show me my recent Touchstone exchange trades"
+## Step 4 — Start Claude Code from that same terminal
 
-To remove it again: `claude plugin uninstall touchstone@touchstone-exchange`
+```bash
+claude
+```
 
-### Getting updates later
+**This matters.** The plugin reads the key from the terminal Claude Code was launched from. If you
+set the variables in one window and start Claude Code in another, it won't find them.
+
+Already had Claude Code open? Quit it and start it again from the terminal where you ran step 3.
+
+---
+
+## Step 5 — Try it
+
+Ask any of these:
+
+- *What are my Touchstone balances?*
+- *What's ETH worth on the Touchstone exchange?*
+- *Is my Touchstone API key working?*
+- *Show me my recent Touchstone trades*
+
+A new account starts with 0.05 BTC, 1.0 ETH and 1000.00 USDC, and no trades. An empty trade list is
+normal, not an error.
+
+If Claude doesn't seem to use the plugin, say **"Touchstone"** in your question — that's the word
+that tells it which tool to reach for.
+
+---
+
+## If something goes wrong
+
+First, check the key is actually in this terminal:
+
+```bash
+echo "${TOUCHSTONE_API_KEY:0:8}... ${TOUCHSTONE_API_URL}"
+```
+
+It should print `tst_...` and the API address. Blank means step 3 didn't stick in this window.
+
+Then run the plugin's own script — it prints the real error:
+
+```bash
+python3 "$(find ~/.claude/plugins -name touchstone.py | head -1)" me
+```
+
+| What you see | What it means | Fix |
+|---|---|---|
+| `no_api_key` | The key isn't in this terminal's environment | Redo step 3, then restart Claude Code from that same terminal |
+| `connection_failed` | Can't reach the API | Check `TOUCHSTONE_API_URL`. On a work network you may need the VPN |
+| `invalid_api_key` | Key is wrong, revoked or expired | Make a new key (step 2). A short copy-paste is the usual cause |
+| `insufficient_scope` | Key has no **read** scope | Make a new key with **read** ticked |
+| `rate_limited` | Too many requests for one key | Wait a minute. It retries on its own |
+| Claude ignores the plugin | It didn't match your wording | Say "Touchstone" in the question |
+
+Still stuck? Send Shreya the exact error text — it says what's wrong and how to fix it.
+
+---
+
+## Updating and removing
+
+Get the latest version:
 
 ```bash
 claude plugin marketplace update touchstone-exchange
 ```
 
-## Running the API yourself instead
+Remove it:
 
-If you'd rather not depend on a hosted API, run the server project locally, then:
+```bash
+claude plugin uninstall touchstone@touchstone-exchange
+```
+
+Lost or leaked your key? Revoke it in the portal and create a new one. Revoking is instant and
+affects only that one key — nobody else is disturbed.
+
+---
+
+## What it can and can't do
+
+**Can:** show your balances, token prices, who your key belongs to, and your past trades.
+
+**Can't:** trade, swap, buy, sell, or move anything. There is no command for it in this plugin, so
+it can't happen by accident. If you ask Claude to trade, it will say it isn't available.
+
+---
+
+## Running it locally instead
+
+Only needed if the API isn't hosted yet, or you want your own private sandbox.
+
+Clone the server repo (`touchstone-api`), then:
+
+```bash
+pip install -r requirements.txt && uvicorn server.main:app --port 8000
+```
+
+The portal is then at `http://localhost:8000/portal`, and you can skip `TOUCHSTONE_API_URL` — it
+defaults to `http://localhost:8000`.
+
+Prefer the terminal to the portal? This plugin also ships `get_key.sh`, which does the same job:
 
 ```bash
 ./get_key.sh
 ```
 
-`TOUCHSTONE_API_URL` defaults to `http://localhost:8000`, so you can leave it unset.
+---
 
-Installing from a local checkout rather than git (note the `./` — a bare `.` is rejected):
+## For the curious: how it works
 
-```bash
-claude plugin marketplace add ./
+```
+.claude-plugin/
+├── marketplace.json     lets `claude plugin marketplace add` find the plugin
+└── plugin.json          the plugin manifest
+get_key.sh               makes an API key from the terminal
+skills/touchstone/
+├── SKILL.md             what Claude reads when your question matches
+├── references/api.md    error codes and response shapes (read only when needed)
+└── scripts/touchstone.py    the script Claude runs. Python standard library only
 ```
 
-### Alternative: skip the plugin wrapper
+Claude loads the skill in three stages, so it costs almost nothing until you need it: the name and
+one-line description at startup (~100 tokens), the full `SKILL.md` only when a question matches,
+and `references/api.md` only when it needs that detail. All the exchange logic lives behind the
+API — this repo is just the client.
 
-The skill works on its own, without the marketplace:
-
-```bash
-mkdir -p ~/.claude/skills && cp -r skills/touchstone ~/.claude/skills/
-```
-
-One catch: `${CLAUDE_PLUGIN_ROOT}` only exists for installed plugins. Copied this way, point the
-agent at `~/.claude/skills/touchstone/scripts/touchstone.py` instead.
-
-## Try the CLI directly
-
-Useful for checking your setup before involving an agent:
-
-```bash
-python3 ./skills/touchstone/scripts/touchstone.py me
-```
-
-```bash
-python3 ./skills/touchstone/scripts/touchstone.py balances
-```
-
-Success prints one line of compact JSON and exits 0. Failures print
-`{"error": {"code", "message", "hint"}}` to stderr and exit non-zero — `2` means it never reached
-the server (bad setup), `1` means the server refused the request.
-
-## Using it on claude.ai instead of Claude Code
-
-Skills run in a sandbox there. The user has to enable code execution and add the API's domain to
-their domain allowlist under **Settings → Capabilities**. A `localhost` server is not reachable
-from that sandbox, so the API has to be on a public URL for this to work.
-
-## Hosting the API for a team
-
-Hosting is the server project's job, not this plugin's — see its `DEPLOY.md`. The short version:
-HTTPS is mandatory because API keys ride in every request header, `TOUCHSTONE_ENV=prod` and a saved
-`TOUCHSTONE_KEY_PEPPER` are required, and the per-IP rate limiter needs fixing or one person's bad
-key will lock out the whole team.
-
-## Not in this version
-
-No trading. The server has a full quote → approve → execute flow with expiring, single-use,
-idempotent quotes, but none of it is exposed here. Adding it means a `quote` command, an
-`execute --confirmed` command, and a reference file with the approval rules — the safety-critical
-part, which deserves its own pass.
+Using claude.ai in a browser rather than Claude Code? Skills run in a sandbox there, so you must
+enable code execution and add the API's domain to your allowlist under **Settings → Capabilities**.
+A `localhost` address won't work from that sandbox.
