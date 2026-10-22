@@ -1,7 +1,7 @@
 {
   "name": "touchstone",
   "displayName": "Touchstone Exchange",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Read-only access to the Touchstone Exchange test API: balances, prices, account details and trade history.",
   "author": {
     "name": "Touchstone Exchange"
@@ -11,19 +11,5 @@
     "testing",
     "api-key",
     "skills"
-  ],
-  "userConfig": {
-    "api_key": {
-      "type": "string",
-      "title": "Touchstone API key",
-      "description": "Your tst_ key from the Touchstone portal. Stored in your OS keychain, not in a file.",
-      "sensitive": true
-    },
-    "api_url": {
-      "type": "string",
-      "title": "Touchstone API address",
-      "description": "Where the Touchstone API lives, e.g. https://touchstone.example.com",
-      "default": "http://localhost:8000"
-    }
-  }
+  ]
 }

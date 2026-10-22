@@ -3,16 +3,13 @@
 
 Standard library only, on purpose: no pip install, so it runs in any agent sandbox.
 
-Configuration comes from the environment, never from arguments. Two sources, in order:
+Configuration comes from the environment, never from arguments:
+    TOUCHSTONE_API_KEY   required, looks like tst_...
+    TOUCHSTONE_API_URL   optional, defaults to http://localhost:8000
 
-    1. TOUCHSTONE_API_KEY / TOUCHSTONE_API_URL
-       Set by hand in a shell profile or Claude Code's settings.json.
-    2. CLAUDE_PLUGIN_OPTION_API_KEY / CLAUDE_PLUGIN_OPTION_API_URL
-       Set by Claude Code from the plugin's userConfig, which it keeps in the OS keychain.
-       This is what a user gets when they paste the key at install time.
-
-An explicitly set TOUCHSTONE_* variable wins, so anyone who already had one keeps working and
-can override the stored value without digging it out of the keychain.
+Note: Claude Code's plugin credential store (userConfig / CLAUDE_PLUGIN_OPTION_*) is NOT usable
+here. Tested on 2.1.303: those values reach hooks and MCP servers, but a fresh session running a
+Bash command sees none of them. A skill's bundled script has to use plain environment variables.
 
 The API key is deliberately NOT accepted as a command-line argument. Arguments end up in
 shell history, process lists and agent transcripts; environment variables do not.
@@ -44,30 +41,20 @@ def die(code, message, hint="", status=EXIT_API_ERROR):
     sys.exit(status)
 
 
-def setting(name):
-    """Read a setting, preferring an explicit TOUCHSTONE_* variable over the stored plugin option."""
-    for var in ("TOUCHSTONE_" + name, "CLAUDE_PLUGIN_OPTION_" + name):
-        value = os.environ.get(var, "").strip()
-        if value:
-            return value
-    return ""
-
-
 def get_api_key():
-    key = setting("API_KEY")
+    key = os.environ.get("TOUCHSTONE_API_KEY", "").strip()
     if not key:
-        die("no_api_key", "No Touchstone API key is configured.",
-            "Easiest fix: run  claude plugin configure touchstone@touchstone-exchange  and paste "
-            "the key from the portal; it is stored in the OS keychain. Alternatively set "
-            "TOUCHSTONE_API_KEY in your shell profile, or in the env block of "
-            "~/.claude/settings.json. Restart Claude Code afterwards. Never ask the user to paste "
-            "the key into the conversation.",
+        die("no_api_key", "TOUCHSTONE_API_KEY is not set in the environment.",
+            "In a terminal: add  export TOUCHSTONE_API_KEY=tst_...  to ~/.zshrc or ~/.bashrc. In "
+            "the Claude Desktop app: add it to the env block of ~/.claude/settings.json. Then "
+            "fully restart Claude Code — the key is only read at startup. Never ask the user to "
+            "paste the key into the conversation.",
             EXIT_SETUP_ERROR)
     return key
 
 
 def get_base_url():
-    return (setting("API_URL") or DEFAULT_URL).rstrip("/")
+    return os.environ.get("TOUCHSTONE_API_URL", DEFAULT_URL).rstrip("/")
 
 
 def retry_delay(headers, attempt):
