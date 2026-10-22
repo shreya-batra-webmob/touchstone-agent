@@ -1,7 +1,7 @@
 {
   "name": "touchstone",
   "displayName": "Touchstone Exchange",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Read-only access to the Touchstone Exchange test API: balances, prices, account details and trade history.",
   "author": {
     "name": "Touchstone Exchange"

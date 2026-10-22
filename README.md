@@ -88,76 +88,151 @@ Nobody needs to send you a key. You make your own, and it never travels through 
 
 ---
 
-## Step 3 — Give the plugin your key
+## Step 3 — Put your key in Claude Code's settings file
 
-**Pick the option that matches how you use Claude Code.**
+This is the one method that works everywhere — terminal **and** the desktop app, on every OS.
 
-### Option A — You run `claude` in a terminal
+You are adding an `env` block to `settings.json`. Claude Code reads it at startup and passes those
+values to the plugin.
 
-Add these two lines to the end of `~/.zshrc` (or `~/.bashrc` if you use bash), pasting your key
-into the first:
+### Where the file is
+
+| OS | Path |
+|---|---|
+| **macOS** | `~/.claude/settings.json` |
+| **Linux** | `~/.claude/settings.json` |
+| **Windows** | `C:\Users\<your-name>\.claude\settings.json` |
+
+If the folder or file doesn't exist yet, create it:
+
+**macOS / Linux**
+```bash
+mkdir -p ~/.claude && touch ~/.claude/settings.json
+```
+
+**Windows (PowerShell)**
+```powershell
+New-Item -ItemType Directory -Force "$env:USERPROFILE\.claude" | Out-Null
+```
+
+### Open it
+
+**macOS**
+```bash
+open -e ~/.claude/settings.json
+```
+
+**Linux**
+```bash
+nano ~/.claude/settings.json
+```
+
+**Windows (PowerShell)**
+```powershell
+notepad "$env:USERPROFILE\.claude\settings.json"
+```
+
+### What to add
+
+If the file is **empty**, paste exactly this, with your own key and the API address:
+
+```json
+{
+  "env": {
+    "TOUCHSTONE_API_KEY": "tst_paste_your_key_here",
+    "TOUCHSTONE_API_URL": "https://touchstone.example.com"
+  }
+}
+```
+
+If the file **already has settings in it**, add `env` alongside what's there — don't replace the
+file. For example, if it currently looks like this:
+
+```json
+{
+  "model": "claude-opus-5",
+  "theme": "dark"
+}
+```
+
+it should end up like this (note the comma after `"dark"`):
+
+```json
+{
+  "model": "claude-opus-5",
+  "theme": "dark",
+  "env": {
+    "TOUCHSTONE_API_KEY": "tst_paste_your_key_here",
+    "TOUCHSTONE_API_URL": "https://touchstone.example.com"
+  }
+}
+```
+
+> ⚠️ **`env` goes at the top level.** Not inside `pluginConfigs`, not inside `permissions`. A key
+> in the wrong block is silently ignored — the plugin will just say `no_api_key` and you'll have no
+> idea why.
+
+### Check the file is still valid JSON
+
+One missing comma breaks **all** your Claude Code settings, not just this plugin. Verify before you
+restart:
+
+**macOS / Linux**
+```bash
+python3 -m json.tool ~/.claude/settings.json > /dev/null && echo "valid JSON"
+```
+
+**Windows (PowerShell)**
+```powershell
+Get-Content "$env:USERPROFILE\.claude\settings.json" | ConvertFrom-Json | Out-Null; "valid JSON"
+```
+
+If it prints an error, fix the spot it names — usually a missing or extra comma.
+
+### Lock the file down
+
+Your key sits in this file in plain text, so stop other accounts on the machine reading it:
+
+**macOS / Linux**
+```bash
+chmod 600 ~/.claude/settings.json
+```
+
+**Windows (PowerShell)**
+```powershell
+icacls "$env:USERPROFILE\.claude\settings.json" /inheritance:r /grant:r "$env:USERNAME:(R,W)"
+```
+
+> **Keep it in your home folder — never in a project's `.claude/settings.json`.** That one gets
+> committed to git. And never paste the key into a chat, a command argument, or a ticket: command
+> arguments end up in shell history and chat transcripts are stored.
+>
+> If it does leak, it's not a crisis — revoke it in the portal and make a new one. Takes seconds
+> and affects nobody else.
+
+### Prefer the terminal? (optional, terminal-only)
+
+If you only ever run `claude` from a terminal, a shell profile works too — add to `~/.zshrc` or
+`~/.bashrc`, then `source` it:
 
 ```bash
 export TOUCHSTONE_API_KEY=tst_paste_your_key_here
 export TOUCHSTONE_API_URL=https://touchstone.example.com
 ```
 
-Then reload: `source ~/.zshrc`
-
-### Option B — You use the Claude Desktop app
-
-The desktop app doesn't inherit your terminal's environment, so `export` won't reach it. Put the
-key in Claude Code's own settings file instead.
-
-Open `~/.claude/settings.json` in a text editor. If it doesn't exist, create it. **Add an `env`
-block, keeping anything already in the file:**
-
-```json
-{
-  "env": {
-    "TOUCHSTONE_API_KEY": "tst_paste_your_key_here",
-    "TOUCHSTONE_API_URL": "https://touchstone.example.com"
-  }
-}
-```
-
-If the file already has settings, just add the `env` block alongside them:
-
-```json
-{
-  "model": "claude-opus-5",
-  "env": {
-    "TOUCHSTONE_API_KEY": "tst_paste_your_key_here",
-    "TOUCHSTONE_API_URL": "https://touchstone.example.com"
-  }
-}
-```
-
-It must stay valid JSON — commas between entries, double quotes everywhere. Then lock the file
-down so only you can read it:
-
-```bash
-chmod 600 ~/.claude/settings.json
-```
-
-> **Why a file and not a terminal?** The desktop app has no shell to inherit from. This is the
-> supported way to give it an environment variable. The key sits in plaintext in that file, so
-> keep it in your home directory — **never** in a project's `.claude/settings.json`, which gets
-> committed to git. If it ever leaks, revoke it in the portal; that takes seconds and affects
-> nobody else.
-
-> Either way: never paste the key into a chat, a command argument, or a file you commit.
-> Arguments and chat transcripts get stored and shared.
+This does **not** reach the desktop app — it has no shell to inherit from. If you use both, use the
+settings file.
 
 ---
 
-## Step 4 — Restart Claude Code
+## Step 4 — Fully restart Claude Code
 
-The key is only picked up at startup.
+The key is only read at **startup**, so this won't work until you restart.
 
-- **Terminal:** quit Claude Code, then start it again **from the terminal where you ran step 3**.
-  If you set the variables in one window and launch from another, it won't find them.
-- **Desktop app:** quit it fully and reopen it. On macOS use ⌘Q — closing the window isn't enough.
+- **Desktop app (macOS)** — ⌘Q. Closing the window is not enough.
+- **Desktop app (Windows)** — quit from the system tray, not just the window ✕.
+- **Terminal** — quit Claude Code and start it again. If you used the shell-profile method, start
+  it from the terminal where you set the variables.
 
 ---
 
