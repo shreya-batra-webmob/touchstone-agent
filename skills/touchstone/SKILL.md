@@ -26,6 +26,32 @@ python3 "${CLAUDE_PLUGIN_ROOT}/skills/touchstone/scripts/touchstone.py" <command
 Each prints one line of compact JSON. Read it and answer the user in plain language — don't make
 them read raw JSON unless they ask for it.
 
+## Questions that need more than one command
+
+If answering needs two or more commands, or any arithmetic, **write one short Python script that
+does the whole job and prints only the answer.** Don't run the commands one at a time and work it
+out yourself.
+
+Two reasons. Each raw JSON response you read costs context you don't need to spend. And money
+arithmetic done in code with `Decimal` is exact, while doing it in your head invites rounding
+mistakes the user can't see.
+
+```python
+import json, subprocess, sys
+from decimal import Decimal
+
+CLI = "${CLAUDE_PLUGIN_ROOT}/skills/touchstone/scripts/touchstone.py"
+run = lambda *a: json.loads(subprocess.run([sys.executable, CLI, *a],
+                                           capture_output=True, text=True).stdout)
+
+balances, prices = run("balances")["balances"], run("prices")["prices"]
+total = sum(Decimal(b["amount"]) * Decimal(prices[b["token"]]) for b in balances)
+print(f"Total ${total:,.2f}")
+```
+
+Amounts are decimal **strings** — always wrap them in `Decimal`, never `float`. Single-command
+questions ("what are my balances?") need none of this: just run the one command.
+
 ## Before anything else
 
 The script reads `TOUCHSTONE_API_KEY` from its environment. If a command fails with `no_api_key`,
