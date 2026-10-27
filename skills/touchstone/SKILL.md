@@ -10,11 +10,21 @@ balances, fixed prices, no blockchain. This skill is **read-only**: nothing it d
 
 ## Running commands
 
-Every command is run through the bundled script with Bash:
+The CLI is `scripts/touchstone.py`, inside this skill's own directory — the path your agent gave
+you when it loaded this file. Substitute that directory wherever `<skill-dir>` appears:
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/skills/touchstone/scripts/touchstone.py" <command>
+python3 <skill-dir>/scripts/touchstone.py <command>
 ```
+
+Not sure of the directory? Find it once, then reuse it:
+
+```bash
+find ~/.claude ~/.agents ~/.codex ~/.cursor ~/.config -name touchstone.py 2>/dev/null | head -1
+```
+
+(Don't hardcode a vendor-specific variable here. Several different agents install this skill, and
+each puts it somewhere different.)
 
 | Command | What it returns |
 |---|---|
@@ -40,7 +50,7 @@ mistakes the user can't see.
 import json, subprocess, sys
 from decimal import Decimal
 
-CLI = "${CLAUDE_PLUGIN_ROOT}/skills/touchstone/scripts/touchstone.py"
+CLI = "<skill-dir>/scripts/touchstone.py"   # the path you resolved above
 run = lambda *a: json.loads(subprocess.run([sys.executable, CLI, *a],
                                            capture_output=True, text=True).stdout)
 
@@ -54,14 +64,17 @@ questions ("what are my balances?") need none of this: just run the one command.
 
 ## Before anything else
 
-The script reads `TOUCHSTONE_API_KEY` from its environment. If a command fails with `no_api_key`,
-it isn't set up yet. The fix depends on how they run Claude Code, so say both — and tell them to
-fully restart it afterwards, since the key is only read at startup:
+The script reads `TOUCHSTONE_API_KEY` from its environment. A `no_api_key` error means it isn't
+set up yet. **The agent must be fully restarted afterwards** — the key is only read at startup.
 
-- **Terminal (`claude`)** — add to `~/.zshrc` (or `~/.bashrc`), then `source` it:
+Where it goes depends on how they run their agent:
+
+- **Any agent started from a terminal** — add to `~/.zshrc` (or `~/.bashrc`) and `source` it:
   `export TOUCHSTONE_API_KEY=tst_...`
-- **Claude Desktop app** — add it to the `env` block of `~/.claude/settings.json`. The desktop app
-  has no shell to inherit from, so `export` will not reach it.
+- **Claude Code's desktop app** — the `env` block of `~/.claude/settings.json`. A desktop app has
+  no shell to inherit from, so `export` never reaches it.
+- **Another desktop agent** — whatever that agent uses to set environment variables. If you don't
+  know, say so and point them at its documentation rather than guessing.
 
 They also need `TOUCHSTONE_API_URL` unless the API is at `http://localhost:8000`, which is the
 default. Keys come from the portal at `<API_URL>/portal`.

@@ -4,7 +4,7 @@ Read this only when you need exact response shapes, error codes or limits.
 Everything here is reached through the bundled script:
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/skills/touchstone/scripts/touchstone.py" <command>
+python3 <skill-dir>/scripts/touchstone.py <command>
 ```
 
 ## Authentication
